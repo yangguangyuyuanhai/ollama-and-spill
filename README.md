@@ -36,7 +36,7 @@ cd ollama-and-spill
 * **LoRA 权重 (Fine-tuned)**: 放入 `workspace/spill/lora_finaly/`
 * **Ollama 模型**: 放入 `workspace/ollama_models/`
 
-> *[在此处填写你的网盘链接或 HuggingFace 地址，例如: https://drive.google.com/...]*
+> *(模型链接待补充 / Model links coming soon)*
 
 ### 4. 启动服务
 使用 Docker Compose 一键启动环境：
