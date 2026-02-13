@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  yoloe:
+    image: yoloe:v2_ollama
+    container_name: yoloe-container
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+    # 网络模式 Host (保持不变，为了连你的 Redis)
+    network_mode: "host"
+
+    # === [关键新增] 显式挂载设备节点 ===
+    # 這是修复 "Failed to initialize NVML: Unknown Error" 的核心
+    # 强制容器直连底层驱动文件，防止长时间运行后掉线
+    devices:
+      - /dev/nvidia0:/dev/nvidia0                   # 你的 RTX 4090
+      - /dev/nvidia-modeset:/dev/nvidia-modeset     # 核心模式设置
+      - /dev/nvidia-uvm:/dev/nvidia-uvm             # 统一虚拟内存
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools # UVM 工具
+      - /dev/nvidiactl:/dev/nvidiactl               # 全局控制器
+
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_MODELS=/ultralytics/workspace/ollama_models
+      - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=all
+
+      # === 开启并发 ===
+      - OLLAMA_NUM_PARALLEL=1
+      # === 限制上下文 ===
+      - OLLAMA_NUM_CTX=6140
+      # === 性能优化 ===
+      - OLLAMA_KEEP_ALIVE=-1
+      - OLLAMA_FLASH_ATTENTION=1
+
+    # 显卡资源预留 (保持不变，这是 Docker 调度层面的声明)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    volumes:
+      - ./workspace:/ultralytics/workspace
+      - ./ollama_logs:/var/log
+
+    ipc: host
+    working_dir: /ultralytics
+
+    # 启动命令
+    command: /bin/bash -c "ollama serve > /var/log/ollama.log 2>&1 & /bin/bash"

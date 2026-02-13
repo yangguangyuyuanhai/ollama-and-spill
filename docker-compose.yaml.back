@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  yoloe:
+    image: yoloe:v2_ollama
+    container_name: yoloe-container
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+    # === [核心修改 1] 网络模式：Host ===
+    # 这一行是解决你 Redis 连接问题的关键。
+    # 开启后，容器不再有独立的 IP，它直接共用宿主机的网卡。
+    # 效果：
+    # 1. 代码里的 "localhost:6380" 直接指向你宿主机上跑的 Redis，不需要改代码。
+    # 2. Ollama 服务会自动监听宿主机的 11434 端口。
+    # 3. 你的 Python API 会自动监听宿主机的 8000 端口。
+    # 注意：使用 host 模式后，下面的 ports 字段必须删除（因为没用了）。
+    network_mode: "host"
+
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_MODELS=/ultralytics/workspace/ollama_models
+      - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=all
+
+      # === [核心修改 2] 开启并发 (配合你的新代码) ===
+      # 显存划分给 4 个并发槽位，允许代码里的 Semaphore(4) 同时跑
+      - OLLAMA_NUM_PARALLEL=4
+      
+      # 限制上下文，防止 OOM (对应你代码里的 num_ctx: 6140)
+      - OLLAMA_NUM_CTX=6140
+      
+      # 性能优化：拒绝卸载，Flash Attention 加速
+      - OLLAMA_KEEP_ALIVE=-1
+      - OLLAMA_FLASH_ATTENTION=1
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    volumes:
+      - ./workspace:/ultralytics/workspace
+      - ./ollama_logs:/var/log
+
+    ipc: host
+    working_dir: /ultralytics
+
+    # 启动命令
+    command: /bin/bash -c "ollama serve > /var/log/ollama.log 2>&1 & /bin/bash"

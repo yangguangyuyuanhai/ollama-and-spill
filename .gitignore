@@ -1,0 +1,43 @@
+# --- 系统与临时文件 ---
+__pycache__/
+*.pyc
+.DS_Store
+.lock/
+._____temp/
+
+# --- 日志与输出 ---
+*.log
+*.out
+my_log.txt
+trainer_log.jsonl
+training_loss.png
+runs/
+
+# --- 数据库与压缩包 ---
+*.db
+*.tar
+*.gz
+*.zip
+*.sh
+
+# --- 核心：忽略所有大模型文件 ---
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+*.index.json
+
+# --- 忽略特定的重型目录 ---
+workspace/images/
+beetle_test/images/
+workspace/model_download/
+workspace/ollama_models/
+workspace/spill/spill_qwen3_thinking_final/
+
+# --- 特例：保留轻量级配置文件 (反向忽略) ---
+!workspace/spill/spill_qwen3_thinking_final/*.json
+!workspace/spill/spill_qwen3_thinking_final/*.jinja
+!workspace/spill/spill_qwen3_thinking_final/*.txt
+!workspace/spill/spill_qwen3_thinking_final/Modelfile
+
